@@ -19,7 +19,8 @@ It was built for the Steel Applied AI coding challenge. The goal is not to repla
 - Git
 - One LLM backend:
   - Ollama running locally, or
-  - an OpenAI-compatible API key
+  - an OpenAI-compatible API key, or
+  - a DeepSeek API key
 
 ## Installation
 
@@ -68,6 +69,17 @@ For compatible providers such as OpenRouter, Grok, Together, or a self-hosted ga
 ```bash
 export OPENAI_BASE_URL=https://api.example.com/v1
 ```
+
+For DeepSeek:
+
+```bash
+export LLM_PROVIDER=deepseek
+export DEEPSEEK_API_KEY=...
+export DEEPSEEK_MODEL=deepseek-v4-flash
+commit-critic --analyze --limit 5
+```
+
+`DEEPSEEK_MODEL` defaults to `deepseek-v4-flash`. You can set it to another DeepSeek chat model such as `deepseek-v4-pro` if your API account supports it.
 
 ## Usage
 
@@ -133,7 +145,7 @@ Total analyzed:   50
 
 ```bash
 python -m unittest discover -v
-python -m compileall .
+python -m compileall commit_critic.py formatter.py git_utils.py llm_client.py prompts.py tests
 ```
 
 The unit tests avoid live LLM calls. They cover Git parsing, staged-only diff behavior, critique normalization, prompt truncation, suggestion-only write mode, and opt-in commit creation.
@@ -153,8 +165,11 @@ See `DESIGN.md` for architecture, prompt strategy, provider tradeoffs, and testi
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `LLM_PROVIDER` | `ollama` or `openai` | `ollama` |
+| `LLM_PROVIDER` | `ollama`, `openai`, or `deepseek` | `ollama` |
 | `OLLAMA_MODEL` | Model name for Ollama | `llama3.1:8b` |
 | `OPENAI_API_KEY` | Required when `LLM_PROVIDER=openai` | - |
 | `OPENAI_MODEL` | OpenAI-compatible model name | `gpt-4o-mini` |
 | `OPENAI_BASE_URL` | Optional custom API base URL | - |
+| `DEEPSEEK_API_KEY` | Required when `LLM_PROVIDER=deepseek` | - |
+| `DEEPSEEK_MODEL` | DeepSeek model name | `deepseek-v4-flash` |
+| `DEEPSEEK_BASE_URL` | Optional DeepSeek-compatible base URL | `https://api.deepseek.com` |

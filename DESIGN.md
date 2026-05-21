@@ -13,7 +13,7 @@ The key design choice is that Git remains the source of truth. The LLM is used f
 
 - `commit_critic.py` owns CLI parsing and workflow orchestration.
 - `git_utils.py` wraps Git subprocess calls and keeps shell quoting out of the application.
-- `llm_client.py` exposes a small provider interface for Ollama and OpenAI-compatible APIs.
+- `llm_client.py` exposes a small provider interface for Ollama, OpenAI-compatible APIs, and DeepSeek.
 - `prompts.py` keeps prompt templates versioned separately from workflow code.
 - `formatter.py` keeps terminal output consistent and easy to scan.
 
@@ -24,6 +24,8 @@ The code intentionally uses the Python standard library for Git operations inste
 Analysis mode asks for structured JSON so the CLI can compute stats and render consistent output. The prompt requests a single JSON object with a `commits` array because OpenAI-compatible JSON mode expects an object at the top level.
 
 The parser still accepts a few common alternate shapes, such as a top-level array, because smaller or local models may not perfectly follow instructions. This tolerance is limited to response shape; scoring and critique still come from the model.
+
+DeepSeek is implemented as a named provider even though it uses the OpenAI SDK shape. That keeps the user-facing setup explicit: `LLM_PROVIDER=deepseek`, `DEEPSEEK_API_KEY`, and `DEEPSEEK_MODEL`, instead of requiring users to remember an OpenAI base URL override.
 
 Write mode asks for plain text because the desired output is a commit message, not a data structure. The CLI strips common Markdown code fences in case a model wraps the answer.
 

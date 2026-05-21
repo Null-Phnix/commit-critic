@@ -9,11 +9,14 @@ This module is designed to be provider-agnostic so the rest of the application
 does not need to know which LLM backend is being used.
 
 Environment Variables:
-    LLM_PROVIDER     - "ollama" or "openai" (default: ollama)
+    LLM_PROVIDER     - "ollama", "openai", or "deepseek" (default: ollama)
     OLLAMA_MODEL     - Model name when using Ollama (default: llama3.1:8b)
     OPENAI_API_KEY   - Required when using API provider
     OPENAI_MODEL     - Model name when using API (default: gpt-4o-mini)
     OPENAI_BASE_URL  - Optional base URL for OpenRouter, Grok, Together, etc.
+    DEEPSEEK_API_KEY - Required when using DeepSeek
+    DEEPSEEK_MODEL   - DeepSeek model name (default: deepseek-v4-flash)
+    DEEPSEEK_BASE_URL - Optional DeepSeek-compatible base URL
 """
 
 import os
@@ -202,13 +205,24 @@ class OpenAIClient(LLMClient):
     OpenRouter, Grok, Together AI, etc. by using the `base_url` parameter.
     """
 
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.model = model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        self.base_url = os.getenv("OPENAI_BASE_URL")
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        base_url: Optional[str] = None,
+        api_key_env: str = "OPENAI_API_KEY",
+        model_env: str = "OPENAI_MODEL",
+        default_model: str = "gpt-4o-mini",
+        provider_label: Optional[str] = None,
+    ):
+        self.api_key_env = api_key_env
+        self.api_key = api_key or os.getenv(api_key_env)
+        self.model = model or os.getenv(model_env, default_model)
+        self.base_url = base_url if base_url is not None else os.getenv("OPENAI_BASE_URL")
+        self.provider_label = provider_label
 
         if not self.api_key:
-            raise LLMError("OPENAI_API_KEY environment variable is required")
+            raise LLMError(f"{api_key_env} environment variable is required")
 
         self._client = None
 
@@ -295,8 +309,29 @@ class OpenAIClient(LLMClient):
                 raise LLMError(f"API JSON generation failed: {e}") from e
 
     def get_provider_name(self) -> str:
-        provider = self.base_url or "openai"
+        provider = self.provider_label or self.base_url or "openai"
         return f"{provider} ({self.model})"
+
+
+class DeepSeekClient(OpenAIClient):
+    """
+    Client for DeepSeek's OpenAI-compatible API.
+
+    DeepSeek uses the OpenAI SDK with a DeepSeek API key and a DeepSeek base URL.
+    Keeping this as a named provider makes setup clearer than requiring users to
+    remember the generic OPENAI_BASE_URL override.
+    """
+
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
+        super().__init__(
+            api_key=api_key,
+            model=model,
+            base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+            api_key_env="DEEPSEEK_API_KEY",
+            model_env="DEEPSEEK_MODEL",
+            default_model="deepseek-v4-flash",
+            provider_label="deepseek",
+        )
 
 
 def get_llm_client() -> LLMClient:
@@ -311,10 +346,12 @@ def get_llm_client() -> LLMClient:
         return OllamaClient()
     elif provider in ("openai", "api"):
         return OpenAIClient()
+    elif provider == "deepseek":
+        return DeepSeekClient()
     else:
         raise LLMError(
             f"Unknown LLM_PROVIDER '{provider}'. "
-            "Valid options are 'ollama' or 'openai'."
+            "Valid options are 'ollama', 'openai', or 'deepseek'."
         )
 
 
