@@ -39,6 +39,9 @@ CRITICAL JSON INSTRUCTIONS:
 - Each object must have these keys: "hash", "score", "issue", "suggestion", "reason".
 - Use "issue": "None" for good commits.
 - Use "reason" to explain why a good commit works; for weak commits, explain the main quality problem.
+- "suggestion" must be exactly one replacement commit message for that commit.
+- Do not include multiple alternatives, multiple commit messages, numbered options, or split-commit advice in "suggestion".
+- If the original commit mixes unrelated changes, choose the best single replacement message and explain the split concern in "reason".
 - Do not include any text before or after the JSON object.
 - Do not wrap the JSON in markdown code blocks.
 - If a commit is good, still provide a suggestion that could make it even better."""
@@ -51,8 +54,12 @@ For each commit, return an object with these exact keys:
 - hash: the commit hash (string)
 - score: integer from 1 to 10
 - issue: short description of problems (use "None" if the commit is good)
-- suggestion: a better version of the commit message
+- suggestion: exactly one better replacement commit message
 - reason: why the commit is good or why the suggested message is better
+
+The suggestion field must contain one commit message only. Do not return two subjects,
+multiple alternatives, bullets, numbered lists, or advice such as "split this into
+two commits" in the suggestion field. Put that explanation in reason instead.
 
 Return ONLY this JSON shape:
 {{
